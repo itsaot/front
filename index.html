@@ -14,13 +14,9 @@
   --bg: #f9fafb;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", sans-serif;
   background: var(--bg);
   display: flex;
   justify-content: center;
@@ -37,8 +33,8 @@ body {
 }
 
 h2 {
-  margin: 0 0 25px 0;
   text-align: center;
+  margin-bottom: 25px;
   color: var(--primary);
 }
 
@@ -52,15 +48,32 @@ label {
 input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 18px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
   font-size: 14px;
+  transition: 0.2s;
 }
 
-input:focus {
-  outline: none;
-  border-color: var(--accent);
+input.valid {
+  border-color: var(--success);
+}
+
+input.invalid {
+  border-color: var(--error);
+}
+
+.feedback {
+  font-size: 12px;
+  margin-bottom: 15px;
+  display: none;
+}
+
+.feedback.success {
+  color: var(--success);
+}
+
+.feedback.error {
+  color: var(--error);
 }
 
 button {
@@ -71,9 +84,8 @@ button {
   background: var(--accent);
   color: white;
   font-weight: 600;
-  font-size: 14px;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: 0.2s;
 }
 
 button:disabled {
@@ -81,33 +93,9 @@ button:disabled {
   cursor: not-allowed;
 }
 
-button:hover:not(:disabled) {
-  background: #1e40af;
-}
-
-.status {
-  margin-top: 20px;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  display: none;
-}
-
-.success {
-  background: #ecfdf5;
-  color: var(--success);
-  border: 1px solid var(--success);
-}
-
-.error {
-  background: #fef2f2;
-  color: var(--error);
-  border: 1px solid var(--error);
-}
-
 .spinner {
   display: none;
-  margin: 15px auto 0;
+  margin: 15px auto;
   width: 30px;
   height: 30px;
   border: 4px solid #e5e7eb;
@@ -118,6 +106,43 @@ button:hover:not(:disabled) {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.checkmark {
+  display: none;
+  margin: 20px auto;
+  width: 80px;
+  height: 80px;
+}
+
+.checkmark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.checkmark circle {
+  stroke: var(--success);
+  stroke-width: 4;
+  fill: none;
+}
+
+.checkmark path {
+  stroke: var(--success);
+  stroke-width: 4;
+  fill: none;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw 0.6s ease forwards;
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.status {
+  text-align: center;
+  font-size: 14px;
+  margin-top: 10px;
 }
 
 pre {
@@ -139,41 +164,109 @@ pre {
   <h2>Application Validation</h2>
 
   <label>Email Address</label>
-  <input type="email" id="email" placeholder="your@email.com" required>
+  <input type="email" id="email" placeholder="your@email.com">
+  <div id="emailFeedback" class="feedback"></div>
 
   <label>API Endpoint URL</label>
-  <input type="url" id="url" placeholder="https://your-api.com/webhook" required>
+  <input type="url" id="url" placeholder="https://your-api.com/webhook">
+  <div id="urlFeedback" class="feedback"></div>
 
   <button id="validateBtn" onclick="validate()">Validate Endpoint</button>
 
   <div class="spinner" id="spinner"></div>
 
-  <div id="status" class="status"></div>
+  <div class="checkmark" id="checkmark">
+    <svg viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="24"></circle>
+      <path d="M14 27 L22 35 L38 19"></path>
+    </svg>
+  </div>
+
+  <div class="status" id="status"></div>
 
   <pre id="result"></pre>
 </div>
 
 <script>
+const emailInput = document.getElementById("email");
+const urlInput = document.getElementById("url");
+
+emailInput.addEventListener("input", () => validateEmail());
+urlInput.addEventListener("input", () => validateURL());
+
+function validateEmail() {
+  const feedback = document.getElementById("emailFeedback");
+  const value = emailInput.value;
+
+  if (!value) {
+    feedback.style.display = "none";
+    emailInput.classList.remove("valid", "invalid");
+    return false;
+  }
+
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  if (valid) {
+    feedback.textContent = "Valid email address";
+    feedback.className = "feedback success";
+    emailInput.classList.add("valid");
+    emailInput.classList.remove("invalid");
+  } else {
+    feedback.textContent = "Please enter a valid email";
+    feedback.className = "feedback error";
+    emailInput.classList.add("invalid");
+    emailInput.classList.remove("valid");
+  }
+
+  feedback.style.display = "block";
+  return valid;
+}
+
+function validateURL() {
+  const feedback = document.getElementById("urlFeedback");
+  const value = urlInput.value;
+
+  if (!value) {
+    feedback.style.display = "none";
+    urlInput.classList.remove("valid", "invalid");
+    return false;
+  }
+
+  try {
+    new URL(value);
+    feedback.textContent = "Valid URL";
+    feedback.className = "feedback success";
+    urlInput.classList.add("valid");
+    urlInput.classList.remove("invalid");
+    feedback.style.display = "block";
+    return true;
+  } catch {
+    feedback.textContent = "Please enter a valid URL";
+    feedback.className = "feedback error";
+    urlInput.classList.add("invalid");
+    urlInput.classList.remove("valid");
+    feedback.style.display = "block";
+    return false;
+  }
+}
+
 async function validate() {
-  const email = document.getElementById("email").value;
-  const url = document.getElementById("url").value;
+  if (!validateEmail() || !validateURL()) return;
+
   const button = document.getElementById("validateBtn");
   const spinner = document.getElementById("spinner");
-  const statusBox = document.getElementById("status");
-  const resultBox = document.getElementById("result");
-
-  if (!email || !url) {
-    showStatus("Please fill in all fields.", "error");
-    return;
-  }
+  const checkmark = document.getElementById("checkmark");
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
 
   button.disabled = true;
   spinner.style.display = "block";
-  statusBox.style.display = "none";
-  resultBox.textContent = "";
+  checkmark.style.display = "none";
+  status.textContent = "";
+  result.textContent = "";
 
   const validationUrl =
-    `https://yhxzjyykdsfkdrmdxgho.supabase.co/functions/v1/application-task?url=${encodeURIComponent(url)}&email=${encodeURIComponent(email)}`;
+    `https://yhxzjyykdsfkdrmdxgho.supabase.co/functions/v1/application-task?url=${encodeURIComponent(urlInput.value)}&email=${encodeURIComponent(emailInput.value)}`;
 
   try {
     const response = await fetch(validationUrl);
@@ -183,25 +276,22 @@ async function validate() {
     button.disabled = false;
 
     if (response.ok) {
-      showStatus("✅ Validation successful!", "success");
+      checkmark.style.display = "block";
+      status.textContent = "Validation Successful!";
+      status.style.color = "var(--success)";
     } else {
-      showStatus("❌ Validation failed.", "error");
+      status.textContent = "Validation Failed.";
+      status.style.color = "var(--error)";
     }
 
-    resultBox.textContent = JSON.stringify(data, null, 2);
+    result.textContent = JSON.stringify(data, null, 2);
 
-  } catch (error) {
+  } catch {
     spinner.style.display = "none";
     button.disabled = false;
-    showStatus("❌ Could not reach validation service.", "error");
+    status.textContent = "Could not reach validation service.";
+    status.style.color = "var(--error)";
   }
-}
-
-function showStatus(message, type) {
-  const statusBox = document.getElementById("status");
-  statusBox.className = "status " + type;
-  statusBox.textContent = message;
-  statusBox.style.display = "block";
 }
 </script>
 
