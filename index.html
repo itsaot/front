@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>API Validation Portal</title>
+
+<style>
+:root {
+  --primary: #111827;
+  --accent: #2563eb;
+  --success: #16a34a;
+  --error: #dc2626;
+  --bg: #f9fafb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  width: 420px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+h2 {
+  margin: 0 0 25px 0;
+  text-align: center;
+  color: var(--primary);
+}
+
+label {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #1e40af;
+}
+
+.status {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: none;
+}
+
+.success {
+  background: #ecfdf5;
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.error {
+  background: #fef2f2;
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.spinner {
+  display: none;
+  margin: 15px auto 0;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+pre {
+  margin-top: 20px;
+  background: #111827;
+  color: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  max-height: 200px;
+  overflow: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Application Validation</h2>
+
+  <label>Email Address</label>
+  <input type="email" id="email" placeholder="your@email.com" required>
+
+  <label>API Endpoint URL</label>
+  <input type="url" id="url" placeholder="https://your-api.com/webhook" required>
+
+  <button id="validateBtn" onclick="validate()">Validate Endpoint</button>
+
+  <div class="spinner" id="spinner"></div>
+
+  <div id="status" class="status"></div>
+
+  <pre id="result"></pre>
+</div>
+
+<script>
+async function validate() {
+  const email = document.getElementById("email").value;
+  const url = document.getElementById("url").value;
+  const button = document.getElementById("validateBtn");
+  const spinner = document.getElementById("spinner");
+  const statusBox = document.getElementById("status");
+  const resultBox = document.getElementById("result");
+
+  if (!email || !url) {
+    showStatus("Please fill in all fields.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  spinner.style.display = "block";
+  statusBox.style.display = "none";
+  resultBox.textContent = "";
+
+  const validationUrl =
+    `https://yhxzjyykdsfkdrmdxgho.supabase.co/functions/v1/application-task?url=${encodeURIComponent(url)}&email=${encodeURIComponent(email)}`;
+
+  try {
+    const response = await fetch(validationUrl);
+    const data = await response.json();
+
+    spinner.style.display = "none";
+    button.disabled = false;
+
+    if (response.ok) {
+      showStatus("✅ Validation successful!", "success");
+    } else {
+      showStatus("❌ Validation failed.", "error");
+    }
+
+    resultBox.textContent = JSON.stringify(data, null, 2);
+
+  } catch (error) {
+    spinner.style.display = "none";
+    button.disabled = false;
+    showStatus("❌ Could not reach validation service.", "error");
+  }
+}
+
+function showStatus(message, type) {
+  const statusBox = document.getElementById("status");
+  statusBox.className = "status " + type;
+  statusBox.textContent = message;
+  statusBox.style.display = "block";
+}
+</script>
+
+</body>
+</html>
